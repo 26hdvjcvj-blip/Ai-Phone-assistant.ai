@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🗣️ phone assistant</title>
+  
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans Bengali', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: white;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .logo {
+            font-size: 3em;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .mic.container {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 30px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .mic-inactive {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border: 4px solid rgba(255,255,255,0.3);
+        }
+
+        .mic-active {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            border: 4px solid #fff;
+            box-shadow: 0 0 50px rgba(255,107,107,0.6);
+            animation: micPulse 1s infinite;
+        }
+
+        @keyframes micPulse {
+            0% { box-shadow: 0 0 50px rgba(255,107,107,0.6); }
+            50% { box-shadow: 0 0 100px rgba(255,107,107,0.9), 0 0 150px rgba(255,202,87,0.6); }
+            100% { box-shadow: 0 0 50px rgba(255,107,107,0.6); }
+        }
+
+        .mic-icon {
+            font-size: 4em;
+            margin-bottom: 10px;
+        }
+
+        .status {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            min-height: 30px;
+        }
+
+        .listening { color: #ff6b6b; font-weight: bold; }
+        .processing { color: #feca57; font-weight: bold; }
+        .success { color: #00ff88; }
+        .error { color: #ff4444; }
+
+        .commands {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+
+        .commands h3 {
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .command-list {
+            list-style: none;
+            text-align: left;
+        }
+
+        .command-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .phone-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 30px;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .phone-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            font-size: 1.5em;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .phone-btn:hover {
+            background: rgba(255,255,255,0.4);
+            transform: scale(1.1);
+        }
+
+        .phone-btn.call { background: linear-gradient(135deg, #00ff88, #00cc66); }
+        .phone-btn.end { background: linear-gradient(135deg, #ff4444, #cc3333); }
+      {
+        .conversation }
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            text-align: left;
+            display: none;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 15px;
+        }
+
+        .user-msg { background: rgba(255,255,255,0.3); }
+        .ai-msg { background: rgba(255,107,107,0.4); }
+
+        @media (max-width: 480px) {
+            .mic-container { width: 150px; height: 150px; }
+            .mic-icon { font-size: 3em; }
+            .logo { font-size: 2.5em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">📱 ভয়েস এসিস্ট্যান্ট</div>
+        
+        <div class="mic-container" id="micContainer">
+            <div class="mic-icon" id="micIcon">🎤</div>
+            <div>ট্যাপ করে কথা বলুন</div>
+        </div>
+
+        <div class="status" id="status">প্রস্তুত</div>
+
+        <div class="conversation" id="conversation"></div>
+
+        <div class="commands">
+            <h3>🗣️ কমান্ডসমূহ:</h3>
+            <ul class="command-list">
+                <li>"কল করো [নাম/নম্বর]"</li>
+                <li>"কল শেষ করো"</li>
+                <li>"সময় বলো"</li>
+                <li>"তারিখ বলো"</li>
+                <li>"ক্যালকুলেটর খোলো"</li>
+                <li>"ওয়েদার বলো"</li>
+                <li>"হ্যালো" বা "হাই"</li>
+            </ul>
+        </div>
+
+        <div class="phone-controls">
+            <button class="phone-btn" id="dialBtn">📞</button>
+            <button class="phone-btn call" id="callBtn">📲</button>
+            <button class="phone-btn end" id="endCallBtn">🚫</button>
+        </div>
+    </div>
+
+    <script>
+        class VoicePhoneAssistant {
+            constructor() {
+                this.recognition = null;
+                this.isListening = false;
+                this.isCallActive = false;
+                this.init();
+            }
+
+            init() {
+                this.initSpeechRecognition();
+                this.bindEvents();
+                this.speak("হ্যালো! আমি আপনার ভয়েস এসিস্ট্যান্ট। মাইক্রোফোনে ট্যাপ করে কথা বলুন।");
+            }
+
+            initSpeechRecognition() {
+                if ('webkitSpeechRecognition' in window) {
+                    this.recognition = new webkitSpeechRecognition();
+                    this.recognition.continuous = false;
+                    this.recognition.interimResults = false;
+                    this.recognition.lang = 'bn-BD';
+                    
+                    this.recognition.onstart = () => this.onListeningStart();
+                    this.recognition.onresult = (event) => this.onSpeechResult(event);
+                    this.recognition.onerror = (event) => this.onSpeechError(event);
+                    this.recognition.onend = () => this.onListeningEnd();
+                } else {
+                    alert('আপনার ব্রাউজার ভয়েস সাপোর্ট করে না!');
+                }
+            }
+
+            bindEvents() {
+                document.getElementById('micContainer').addEventListener('click', () => {
+                    if (!this.isListening) {
+                        this.toggleListening();
+                    }
+                });
+
+                // Phone controls
+                document.getElementById('callBtn').addEventListener('click', () => this.makeCall());
+                document.getElementById('endCallBtn').addEventListener('click', () => this.endCall());
+                document.getElementById('dialBtn').addEventListener('click', () => this.openDialer());
+            }
+
+            toggleListening() {
+                if (this.isListening) {
+                    this.recognition.stop();
+                } else {
+                    this.recognition.start();
+                }
+            }
+
+            onListeningStart() {
+                this.isListening = true;
+                document.getElementById('micContainer').className = 'mic-container mic-active';
+                document.getElementById('micIcon').textContent = '🔴';
+                document.getElementById('status').textContent = 'শুনছি...';
+                document.getElementById('status').className = 'status listening';
+                this.addMessage('আপনি', 'শুনছি...');
+            }
+
+            onSpeechResult(event) {
+                const transcript = event.results[0][0].transcript.toLowerCase();
+                document.getElementById('status').textContent = `শুনেছি: "${transcript}"`;
+                this.addMessage('আপনি', transcript);
+                this.processCommand(transcript);
+            }
+
+            onSpeechError(event) {
+                console.error('Speech error:', event.error);
+                this.setStatus('ভুল হয়েছে! আবার চেষ্টা করুন।', 'error');
+            }
+
+            onListeningEnd() {
+                this.isListening = false;
+                document.getElementById('micContainer').className = 'mic-container mic-inactive';
+                document.getElementById('micIcon').textContent = '🎤';
+                document.getElementById('status').className = 'status';
+            }
+                async processCommand(command) {
+        this.setStatus('চিন্তা করছি...', 'processing');
+        // নিচের লাইনে আপনার আসল API Key বসান
+        const OPENAI_API_KEY =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; 
+
+        try {
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${OPENAI_API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: "gpt-3.5-turbo",
+                    messages: [
+                        { role: "system", content: "তুমি একজন বাংলা ভাষী ভয়েস অ্যাসিস্ট্যান্ট।" },
+                        { role: "user", content: command }
+                    ],
+                    max_tokens: 150
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.choices && data.choices[0]) {
+                let aiReply = data.choices[0].message.content;
+                this.addMessage('assistant', aiReply);
+                this.speak(aiReply);
+                this.setStatus('ready', 'success');
+            } else {
+                throw new Error("API থেকে কোনো উত্তর আসেনি");
+            }
+
+        } catch (error) {
+            console.error("Error:", error);
+            const fallbackMsg = "দুঃখিত, কানেকশনে সমস্যা হচ্ছে। আবার চেষ্টা করুন।";
+            this.addMessage('অ্যাসিস্ট্যান্ট', fallbackMsg);
+            this.speak(fallbackMsg);
+            this.setStatus('এরর!', 'error');
+          
+
+            async handleCallCommand(command) {
+                const numberMatch = command.match(/(\d{10,11})/);
+                if (numberMatch) {
+                    this.makeCall(numberMatch[1]);
+                    return `কল করা হচ্ছে ${numberMatch[1]} নম্বরে।`;
+                } else {
+                    return 'দুঃখিত, নম্বর খুঁজে পাইনি। সঠিক নম্বর বলুন।';
+                }
+            }
+
+            makeCall(number = '017xxxxxxxx') {
+                this.isCallActive = true;
+                document.getElementById('callBtn').style.background = 'rgba(0,255,136,0.3)';
+                this.setStatus(`কল চলছে: ${number}`, 'success');
+                this.ringTone();
+            }
+
+            endCall() {
+                this.isCallActive = false;
+                document.getElementById('callBtn').style.background = 'linear-gradient(135deg, #00ff88, #00cc66)';
+                this.setStatus('কল শেষ', 'success');
+            }
+
+            openDialer() {
+                window.open('tel:+88017xxxxxxxx', '_self');
+            }
+
+            openCalculator() {
+                // মোবাইলে ক্যালকুলেটর খোলার জন্য
+                if ('launchApp' in navigator) {
+                    navigator.launchApp('com.android.calculator2');
+                } else {
+                    window.open('https://www.google.com/search?q=calculator', '_blank');
+                }
+            }
+
+            ringTone() {
+                // সিম্পল বিপ সাউন্ড
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+            }
+
+            async speak(text) {
+                if ('speechSynthesis' in window) {
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'bn-BD';
+                    utterance.rate = 0.9;
+                    speechSynthesis.speak(utterance);
+                }
+            }
+
+            setStatus(text, type) {
+                const statusEl = document.getElementById('status');
+                statusEl.textContent = text;
+                statusEl.className = `status ${type}`;
+            }
+
+            addMessage(sender, text) {
+                const convo = document.getElementById('conversation');
+                convo.style.display = 'block';
+                convo.scrollTop = convo.scrollHeight;
+                
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `message ${sender === 'আপনি' ? 'user-msg' : 'ai-msg'}`;
+                msgDiv.textContent = `${sender}: ${text}`;
+                convo.appendChild(msgDiv);
+            }
+        }
+
+        // Initialize Assistant
+        const assistant = new VoicePhoneAssistant();
+    </script>
+  
+</body>
+</html>
